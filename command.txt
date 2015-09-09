@@ -1,0 +1,7 @@
+cd /Users/seanmooney/Desktop/tvbreak 
+node index.js -i /Volumes/ROYAL_PAINS -t 'Royal Pains' -o /Users/seanmooney/Desktop/test -s 4 -e 13,14,15 -et 5,6,7
+
+node index.js -i /Volumes/WEEDS_SEASON_1_DISC_1 -t 'Weeds' -o /Users/seanmooney/Desktop/test -s 1 -e 1,2,3,4,5,6 -min 20 -max 40
+
+
+HandBrakeCLI -i /Volumes/ROYAL_PAINS --scan -t 0
