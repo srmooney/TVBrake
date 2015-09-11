@@ -5,7 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "handbrake-js": "^2.0.5",
-    "progress": "^1.1.8"
+    "progress": "^1.1.8",
+    "yargs": "^3.24.0"
   },
   "devDependencies": {},
   "scripts": {

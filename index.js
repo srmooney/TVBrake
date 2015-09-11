@@ -1,7 +1,10 @@
+#!/usr/bin/node
 
 var hbjs = require("handbrake-js"),
 	ProgressBar = require('progress'),
-	Path = require('path');
+	Path = require('path'),
+	yargs = require('yargs');
+
  /*
 hbjs.exec({ "preset-list": true }, function(err, stdout, stderr){
     if (err) throw err;
@@ -14,36 +17,84 @@ process.argv.forEach(function (val, index, array) {
 });
 */
 
-function getArgumentKeyValue(key, defaultValue){
-	if(process.argv.indexOf(key) != -1){ //does our flag exist?
-	    return process.argv[process.argv.indexOf(key) + 1]; //grab the next item
-	}
-	return defaultValue;
-
-}
-var options = {};
-options.input = getArgumentKeyValue('-i', null);
-options.output = getArgumentKeyValue('-o', null);
-options.title = getArgumentKeyValue('-t', null);
-options.season = getArgumentKeyValue('-s', null);
-options.episodes = getArgumentKeyValue('-e', null);
-options.episodeTitles = getArgumentKeyValue('-et', null);
-//options.chapters = getArgumentKeyValue('-c', 0);
-options.minLength = getArgumentKeyValue('-min', 40);
-options.maxLength = getArgumentKeyValue('-max', 50);
-options.handbrakeArgs = getArgumentKeyValue('-handbrake', '');
-options.debug = (getArgumentKeyValue('-debug', false) == 'true');
-
+var options = yargs
+  .usage('Usage: $0 [options]')
+  .help('help').alias('help', 'h')
+  .version('1.0.1', 'version').alias('version', 'V')
+  .strict()
+  .options({
+    input: {
+      alias: 'i',
+      description: "<path> Input directory",
+      requiresArg: true,
+      required: true
+    },
+    output: {
+      alias: 'o',
+      description: "<path> Output directory",
+      requiresArg: true,
+      required: true
+    },
+    title: {
+      alias: 't',
+      description: "<string> Series Title",
+      requiresArg: true,
+      required: true
+    },
+    season: {
+      alias: 's',
+      description: "<number> Seanson number",
+      requiresArg: true,
+      required: true
+    },
+    episodes: {
+      alias: 'e',
+      description: "<array> Episode Numbers",
+      requiresArg: true,
+      required: true,
+      type: 'string'
+    },
+    episodeTitles: {
+      alias: 'E',
+      description: "<array> Episode Titles",
+      type: 'string'
+    },
+    minLength: {
+      alias: 'm',
+      description: "<number> Miniumn episode length (minutes)",
+      default: 40
+    },
+    maxLength: {
+      alias: 'M',
+      description: "<number> Maximum episode length (minutes)",
+      default: 50
+    },
+    handbrake: {
+      alias: 'h',
+      description: "<string> Handbrake arguments",
+      type: 'string'
+    },
+    debug: {
+      alias: 'd',
+      description: "Debug",
+      type: 'boolean'
+    }    
+  })
+  .argv;
 
 
 if (!options.input){ console.log('Input not valid!'); return; }
 if (!options.output){ console.log('Output not valid!'); return; }
 if (!options.season){ console.log('Season not valid!'); return; }
 
+if (options.episodes){
+  options.episodes = options.episodes.split(',');
+}
+if (options.episodeTitles){
+  options.episodeTitles = options.episodeTitles.split(',');
+}
 
-if (options.episodes != null) { options.episodes = options.episodes.split(','); }
-if (options.episodeTitles != null) { options.episodeTitles = options.episodeTitles.split(','); }
-if (!options.title) { options.title = options.input.split('/').pop(); }
+//if (!options.title) { options.title = options.input.split('/').pop(); }
 
 
 console.log('running with options:', options);
@@ -101,7 +152,8 @@ function scan(){
 	    		var chapterMin = durationToMinutes(parts[7]);
 	    		var chapterSec = durationToSeconds(parts[7]);
 	    		//var chapterNumber = line.replace('    + ', '').split(':')[0];
-	    		var chapterNumber = parseInt(parts[1].replace(':', ''));
+	    		//var chapterNumber = parseInt(parts[1].replace(':', ''));
+	    		var chapterNumber = parts[1].replace(':', '');
 
 	    		console.log('Title %s-%s: %s min, %s sec', titles[curTitle].title, chapterNumber, chapterMin, chapterSec);
 	    		if (chapterSec > 10){
@@ -179,7 +231,7 @@ function scan(){
 
 
 
-	    /* Try to find episodes automaigically */
+	    /* Try to find episodes automagically */
 	    if (options.episodes != null) {
 	    	var episodes = options.episodes;
 	    	//console.log('episodes.length', episodes.length);
@@ -202,9 +254,9 @@ function scan(){
 
 
 	    	console.log('convert:', convert);
-	    	if (!options.debug){
+	    	//if (!options.debug){
     			convertTitles(convert);
-    		}
+    		//}
 	    	return;
 	    }
 	});
@@ -241,7 +293,7 @@ function convertTitles(titles){
 	var handbrakeOptions = { input: options.input, title: parseInt(title.title), output: Path.join(options.output, episodeName) };
 	//console.log('convert: ', title.title, ' > ', episodeName, handbrakeOptions);
 	var display = 'Converting Title '+ title.title;
-	if (title.chapters.indexOf('-')){
+	if (title.chapters.indexOf('-') > 0){
 		handbrakeOptions.chapters = title.chapters;
 		display += ' Chapters '+ title.chapters;
 	}
@@ -252,6 +304,12 @@ function convertTitles(titles){
     	width: 25,
     	total: 100
     });
+
+    if (options.debug){
+    	console.log(display, handbrakeOptions);
+    	convertTitles(titles);
+    	return;
+    }
 
 	hbjs.spawn(handbrakeOptions)
 	.on("error", function(err){
